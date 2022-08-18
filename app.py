@@ -30,8 +30,7 @@ migrate = Migrate(app, db)
 
 
 def genre_formatter(genres):
-    formatted_genres = genres.replace('{', '')
-    formatted_genres.replace('}', '')
+    formatted_genres = genres.replace('{', '').replace('}', '')
     formatted_genres = list(formatted_genres.split(','))
     return formatted_genres
 
@@ -106,10 +105,43 @@ def show_venue(venue_id):
     # TODO: replace with real venue data from the venues table, using venue_id
     venue = Venue.query.filter(Venue.id == venue_id).first()
     venue.genres = genre_formatter(venue.genres)
-    venue.past_shows = []
-    venue.upcoming_shows = []
-    venue.past_shows_count = 0
-    venue.upcoming_shows_count = 0
+    
+    upcoming_shows_data = Show.query.join("artist_show").\
+        join("venue_show"). \
+        add_columns(Artist.name, Artist.image_link, Venue.id). \
+        filter(Venue.id == venue_id). \
+        filter(Show.start_time >= datetime.now()).all()
+
+    upcoming_shows = []
+    for upcoming_show in upcoming_shows_data:
+        upcoming_shows.append({
+            'artist_id': upcoming_show[0].artist_id,
+            'artist_name': upcoming_show[1],
+            'artist_image_link': upcoming_show[2],
+            'start_time': format_datetime(str(upcoming_show[0].start_time))
+        })
+
+    venue.upcoming_shows_count = len(upcoming_shows)
+    venue.upcoming_shows = upcoming_shows
+    
+    
+    past_shows_data = Show.query.join("artist_show").\
+        join("venue_show"). \
+        add_columns(Artist.name, Artist.image_link, Venue.id). \
+        filter(Venue.id == venue_id). \
+        filter(Show.start_time < datetime.now()).all()
+
+    past_shows = []
+    for past_show in past_shows_data:
+        past_shows.append({
+            'artist_id': past_show[0].artist_id,
+            'artist_name': past_show[1],
+            'artist_image_link': past_show[2],
+            'start_time': format_datetime(str(past_show[0].start_time))
+        })
+
+    venue.past_shows_count = len(past_shows)
+    venue.past_shows = past_shows
 
     return render_template('pages/show_venue.html', venue=venue)
 
@@ -201,11 +233,43 @@ def show_artist(artist_id):
     # shows the artist page with the given artist_id
     # DONE: replace with real artist data from the artist table, using artist_id
     artist = Artist.query.get(artist_id)
-    print('############', artist)
-    artist.past_shows = []
-    artist.upcoming_shows = []
-    artist.past_shows_count = 0
-    artist.upcoming_shows_count = 0
+    artist.genres = genre_formatter(artist.genres)
+
+    upcoming_shows_data = Show.query.join(Venue).\
+      add_columns(Venue.name, Venue.image_link).\
+      filter(Show.artist_id == artist_id).\
+      filter(Show.start_time >= datetime.now()).all()
+
+    upcoming_shows = []
+    for upcoming_show in upcoming_shows_data:
+      upcoming_shows.append({
+          'venue_id': upcoming_show[0].venue_id,
+          'venue_name': upcoming_show[1],
+          'venue_image_link': upcoming_show[2],
+          'start_time': format_datetime(str(upcoming_show[0].start_time))
+      })
+      
+
+    artist.upcoming_shows = upcoming_shows
+    artist.upcoming_shows_count = len(upcoming_shows)
+    
+    
+    past_shows_datas = Show.query.join(Venue, Show.venue_id == Venue.id).\
+      add_columns(Venue.name, Venue.image_link).\
+      filter(Show.artist_id == artist_id).\
+      filter(Show.start_time < datetime.now()).all()
+
+    past_shows = []
+    for past_show in past_shows_datas:
+      past_shows.append({
+          'venue_id': past_show[0].venue_id,
+          'venue_name': past_show[1],
+          'venue_image_link': past_show[2],
+          'start_time': format_datetime(str(past_show[0].start_time))
+      })
+    
+    artist.past_shows = past_shows
+    artist.past_shows_count = len(past_shows)
 
     return render_template('pages/show_artist.html', artist=artist)
 
