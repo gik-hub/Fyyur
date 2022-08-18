@@ -159,36 +159,43 @@ def create_venue_form():
 def create_venue_submission():
     # DONE: insert form data as a new Venue record in the db, instead
     # DONE: modify data to be the data object returned from db insertion
-    try:
-        new_venue = Venue(
-            name=request.form['name'],
-            city=request.form['city'],
-            state=request.form['state'],
-            address=request.form['address'],
-            phone=request.form['phone'],
-            genres=request.form['genres'],
-            facebook_link=request.form['facebook_link'],
-            image_link=request.form['image_link'],
-            website_link=request.form['website_link'],
-            seeking_talent=True if request.form.get(
-                'seeking_talent') == 'y' else False,
-            seeking_description=request.form['seeking_description']
-        )
-        db.session.add(new_venue)
-        db.session.commit()
-        # on successful db insert, flash success
-        flash('The Venue: ' +
-              request.form['name'] + ' was created successfully!')
+    form = VenueForm()
+    if form.validate():
+        try:
+            new_venue = Venue(
+                name=request.form['name'],
+                city=request.form['city'],
+                state=request.form['state'],
+                address=request.form['address'],
+                phone=request.form['phone'],
+                genres=request.form['genres'],
+                facebook_link=request.form['facebook_link'],
+                image_link=request.form['image_link'],
+                website_link=request.form['website_link'],
+                seeking_talent=True if request.form.get(
+                    'seeking_talent') == 'y' else False,
+                seeking_description=request.form['seeking_description']
+            )
+            db.session.add(new_venue)
+            db.session.commit()
+            # on successful db insert, flash success
+            flash('The Venue: ' +
+                request.form['name'] + ' was created successfully!')
 
-    # DONE: on unsuccessful db insert, flash an error instead.
-    except Exception as e:
-        print('>>>>>>>>>>>>>:', e, '||', request.form['genres'])
-        flash('An error occurred when creating the venue.')
-        db.session.rollback()
-    # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-    # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-    finally:
-        db.session.rollback()
+        # DONE: on unsuccessful db insert, flash an error instead.
+        except Exception as e:
+            print('>>>>>>>>>>>>>:', e, '||', request.form['genres'])
+            flash('An error occurred when creating the venue.')
+            db.session.rollback()
+        # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+        # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+        finally:
+            db.session.rollback()
+
+    else:
+        for error in form.errors:
+            flash(form.errors[error][0])
+
 
     return render_template('pages/home.html')
 
@@ -364,35 +371,41 @@ def create_artist_submission():
     # called upon submitting the new artist listing form
     # DONE: insert form data as a new Venue record in the db, instead
     # DONE: modify data to be the data object returned from db insertion
-    try:
-        artist = Artist(
-            name=request.form['name'],
-            city=request.form['city'],
-            state=request.form['state'],
-            phone=request.form['phone'],
-            genres=request.form.getlist('genres'),
-            image_link=request.form['image_link'],
-            facebook_link=request.form['facebook_link'],
-            seeking_venue=True if request.form.get(
-                'seeking_venue') == 'y' else False,
-            website_link=request.form['website_link'],
-            seeking_description=request.form['seeking_description'])
-        db.session.add(artist)
-        db.session.commit()
-        # on successful db insert, flash success
-        flash(request.form['name'] +
-              ' was successfully added to artists list!')
+    form = ArtistForm(request.form)
+    if form.validate():
+        try:
+            artist = Artist(
+                name=request.form['name'],
+                city=request.form['city'],
+                state=request.form['state'],
+                phone=request.form['phone'],
+                genres=request.form.getlist('genres'),
+                image_link=request.form['image_link'],
+                facebook_link=request.form['facebook_link'],
+                seeking_venue=True if request.form.get(
+                    'seeking_venue') == 'y' else False,
+                website_link=request.form['website_link'],
+                seeking_description=request.form['seeking_description'])
+            db.session.add(artist)
+            db.session.commit()
+            # on successful db insert, flash success
+            flash(request.form['name'] +
+                ' was successfully added to artists list!')
 
-        return render_template('pages/home.html')
+            return render_template('pages/home.html')
 
-    except Exception as e:
-        print('>>>>>>>>>>>>>>>>>>', e)
-        db.session.rollback()
-        # DONE: on unsuccessful db insert, flash an error instead.
-        flash('An error occurred when adding the artist.')
-    finally:
-        db.session.close()
-
+        except Exception as e:
+            print('>>>>>>>>>>>>>>>>>>', e)
+            db.session.rollback()
+            # DONE: on unsuccessful db insert, flash an error instead.
+            flash('An error occurred when adding the artist.')
+        finally:
+            db.session.close()
+    
+    else:
+        for error in form.errors:
+            flash(form.errors[error][0])
+    
     return render_template('pages/home.html')
 
 
